@@ -1,7 +1,10 @@
 ﻿const STORAGE_KEY = "torneo-admin-state-v1";
+const API_STATE_URL = "/api/state";
 const GROUP_NAMES = "ABCDEFGHIJKLMNOP".split("");
 const ROUND_NAMES = ["Octavos", "Cuartos", "Semifinales", "Final"];
 const PAGE = document.body.dataset.page || "teams";
+const REMOTE_SYNC_INTERVAL_MS = 5000;
+const REMOTE_SAVE_DELAY_MS = 450;
 
 const els = {};
 
@@ -12,13 +15,21 @@ const defaultState = () => ({
   message: "Pegue 80 equipos para arrancar.",
 });
 
-let state = loadState();
+let state = loadLocalState();
+let remoteSyncStatus = "Local";
+let remoteUpdatedAt = null;
+let pendingRemoteSave = null;
+let isApplyingRemoteState = false;
+let isSavingRemoteState = false;
+let lastLocalEditAt = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheElements();
   bindEvents();
   syncTextarea();
   render();
+  initializeRemoteState();
+  window.setInterval(refreshRemoteState, REMOTE_SYNC_INTERVAL_MS);
 });
 
 function cacheElements() {
@@ -189,6 +200,7 @@ function render(reconcile = true) {
       pill(`${loadedGroups.length}/16 grupos`),
       pill(`${groupStats.played}/160 partidos jugados`),
       pill(`${groupStats.finishedGroups}/16 grupos completos`),
+      pill(remoteSyncStatus),
     ].join("");
   }
   if (els.teamsSummary) {
@@ -220,7 +232,113 @@ function render(reconcile = true) {
 
   renderGroups(loadedGroups);
   renderPlayoffs();
-  saveState();
+  saveLocalState();
+}
+
+async function initializeRemoteState() {
+  const localHasData = hasTournamentData(state);
+  remoteSyncStatus = "Sincronizando";
+  render(false);
+
+  try {
+    const remote = await fetchRemoteState();
+    if (remote.state && hasTournamentData(remote.state)) {
+      applyRemoteState(remote.state, remote.updatedAt, "Datos compartidos cargados desde Supabase.");
+      return;
+    }
+
+    if (localHasData) {
+      await saveRemoteStateNow();
+      remoteSyncStatus = "En linea";
+      render(false);
+      return;
+    }
+
+    remoteSyncStatus = "En linea";
+    render(false);
+  } catch {
+    remoteSyncStatus = "Modo local";
+    render(false);
+  }
+}
+
+async function refreshRemoteState() {
+  if (isSavingRemoteState || Date.now() - lastLocalEditAt < 1200) return;
+
+  try {
+    const remote = await fetchRemoteState();
+    remoteSyncStatus = "En linea";
+
+    if (!remote.state || !remote.updatedAt || remote.updatedAt === remoteUpdatedAt) {
+      render(false);
+      return;
+    }
+
+    applyRemoteState(remote.state, remote.updatedAt, "Datos actualizados desde otro dispositivo.");
+  } catch {
+    remoteSyncStatus = "Modo local";
+    render(false);
+  }
+}
+
+function applyRemoteState(remoteState, updatedAt, message) {
+  isApplyingRemoteState = true;
+  state = normalizeImportedState(remoteState);
+  state.message = message;
+  remoteUpdatedAt = updatedAt || remoteUpdatedAt;
+  remoteSyncStatus = "En linea";
+  syncTextarea();
+  render();
+  isApplyingRemoteState = false;
+}
+
+async function fetchRemoteState() {
+  const response = await fetch(API_STATE_URL, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo cargar el estado compartido.");
+  }
+
+  return response.json();
+}
+
+function queueRemoteSave() {
+  if (isApplyingRemoteState) return;
+  lastLocalEditAt = Date.now();
+  remoteSyncStatus = "Guardando";
+  window.clearTimeout(pendingRemoteSave);
+  pendingRemoteSave = window.setTimeout(saveRemoteStateNow, REMOTE_SAVE_DELAY_MS);
+}
+
+async function saveRemoteStateNow() {
+  if (isApplyingRemoteState) return;
+
+  isSavingRemoteState = true;
+  try {
+    const response = await fetch(API_STATE_URL, {
+      method: "PUT",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ state: buildPersistedState(state) }),
+    });
+
+    if (!response.ok) {
+      throw new Error("No se pudo guardar el estado compartido.");
+    }
+
+    const saved = await response.json();
+    remoteUpdatedAt = saved.updatedAt || remoteUpdatedAt;
+    remoteSyncStatus = "Guardado";
+  } catch {
+    remoteSyncStatus = "Modo local";
+  } finally {
+    isSavingRemoteState = false;
+    render(false);
+  }
 }
 
 function renderGroups(groups) {
@@ -774,7 +892,24 @@ function normalizeImportedState(parsed) {
   return next;
 }
 
-function loadState() {
+function hasTournamentData(value) {
+  return Boolean(
+    parseTeams(value?.teamsText || "").length ||
+      value?.groups?.length ||
+      value?.playoffs
+  );
+}
+
+function buildPersistedState(value) {
+  return {
+    teamsText: value.teamsText || "",
+    groups: Array.isArray(value.groups) ? value.groups : [],
+    playoffs: value.playoffs || null,
+    message: value.message || "",
+  };
+}
+
+function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
@@ -785,8 +920,13 @@ function loadState() {
 }
 
 function saveState() {
+  saveLocalState();
+  queueRemoteSave();
+}
+
+function saveLocalState() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildPersistedState(state)));
   } catch {
     // ignore storage failures
   }
