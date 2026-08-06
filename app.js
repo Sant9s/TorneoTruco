@@ -274,34 +274,7 @@ function renderGroups(groups) {
           </table>
 
           <div class="matches-list">
-            ${group.matches
-              .map((match, matchIndex) => {
-                const leftSelected = match.winner === match.home;
-                const rightSelected = match.winner === match.away;
-                return `
-                  <div class="match-row">
-                    <div class="match-teams">
-                      <div class="team-row">
-                        <span class="team-name">${escapeHtml(match.home)}</span>
-                        <div class="match-actions">
-                          <button class="choice ${leftSelected ? "selected" : ""}" data-action="group-win" data-group="${group.index}" data-match="${matchIndex}" data-team="${escapeAttr(match.home)}">Gana</button>
-                        </div>
-                      </div>
-                      <div class="team-row">
-                        <span class="team-name">${escapeHtml(match.away)}</span>
-                        <div class="match-actions">
-                          <button class="choice ${rightSelected ? "selected" : ""}" data-action="group-win" data-group="${group.index}" data-match="${matchIndex}" data-team="${escapeAttr(match.away)}">Gana</button>
-                        </div>
-                      </div>
-                      <div class="match-meta">Partido ${matchIndex + 1}</div>
-                    </div>
-                    <div class="match-actions">
-                      <button data-action="clear-group" data-group="${group.index}" data-match="${matchIndex}">Quitar</button>
-                    </div>
-                  </div>
-                `;
-              })
-              .join("")}
+            ${renderGroupFixture(group)}
           </div>
         </article>
       `;
@@ -381,6 +354,77 @@ function renderPlayoffs() {
   els.playoffsContainer.querySelectorAll("button[data-action]").forEach((button) => {
     button.addEventListener("click", onActionClick);
   });
+}
+
+function renderGroupFixture(group) {
+  return getFixtureRounds(group)
+    .map(
+      (round) => `
+        <section class="fixture-round">
+          <div class="fixture-round-head">
+            <strong>Fecha ${round.number}</strong>
+            <span class="bye-badge">Libre: ${escapeHtml(round.bye || "Sin definir")}</span>
+          </div>
+          <div class="fixture-matches">
+            ${round.matches
+              .map(({ match, matchIndex }) => {
+                const leftSelected = match.winner === match.home;
+                const rightSelected = match.winner === match.away;
+                return `
+                  <div class="match-row">
+                    <div class="match-teams">
+                      <div class="team-row">
+                        <span class="team-name">${escapeHtml(match.home)}</span>
+                        <div class="match-actions">
+                          <button class="choice ${leftSelected ? "selected" : ""}" data-action="group-win" data-group="${group.index}" data-match="${matchIndex}" data-team="${escapeAttr(match.home)}">Gana</button>
+                        </div>
+                      </div>
+                      <div class="team-row">
+                        <span class="team-name">${escapeHtml(match.away)}</span>
+                        <div class="match-actions">
+                          <button class="choice ${rightSelected ? "selected" : ""}" data-action="group-win" data-group="${group.index}" data-match="${matchIndex}" data-team="${escapeAttr(match.away)}">Gana</button>
+                        </div>
+                      </div>
+                      <div class="match-meta">Partido ${matchIndex + 1}</div>
+                    </div>
+                    <div class="match-actions">
+                      <button data-action="clear-group" data-group="${group.index}" data-match="${matchIndex}">Quitar</button>
+                    </div>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        </section>
+      `
+    )
+    .join("");
+}
+
+function getFixtureRounds(group) {
+  const roundCount = group.teams.length;
+  const rounds = Array.from({ length: roundCount }, (_, index) => ({
+    number: index + 1,
+    bye: null,
+    matches: [],
+  }));
+
+  group.matches.forEach((match, matchIndex) => {
+    const roundIndex = Number.isInteger(match.round) ? match.round - 1 : Math.floor(matchIndex / 2);
+    const safeRoundIndex = Math.max(0, Math.min(rounds.length - 1, roundIndex));
+    rounds[safeRoundIndex].matches.push({ match, matchIndex });
+  });
+
+  rounds.forEach((round) => {
+    const playing = new Set();
+    round.matches.forEach(({ match }) => {
+      playing.add(match.home);
+      playing.add(match.away);
+    });
+    round.bye = group.teams.find((team) => !playing.has(team)) || null;
+  });
+
+  return rounds;
 }
 
 function onActionClick(event) {
@@ -523,15 +567,33 @@ function shuffleArray(items) {
 
 function buildMatches(teams) {
   const matches = [];
-  for (let i = 0; i < teams.length; i += 1) {
-    for (let j = i + 1; j < teams.length; j += 1) {
-      matches.push({
-        home: teams[i],
-        away: teams[j],
-        winner: null,
-      });
+  const rotation = [...teams, null];
+  const rounds = rotation.length - 1;
+  const half = rotation.length / 2;
+
+  for (let round = 0; round < rounds; round += 1) {
+    let slot = 0;
+    for (let index = 0; index < half; index += 1) {
+      const home = rotation[index];
+      const away = rotation[rotation.length - 1 - index];
+      if (home && away) {
+        slot += 1;
+        matches.push({
+          home: round % 2 === 0 ? home : away,
+          away: round % 2 === 0 ? away : home,
+          round: round + 1,
+          slot,
+          winner: null,
+        });
+      }
     }
+
+    const fixed = rotation[0];
+    const rest = rotation.slice(1);
+    rest.unshift(rest.pop());
+    rotation.splice(0, rotation.length, fixed, ...rest);
   }
+
   return matches;
 }
 
@@ -702,6 +764,8 @@ function normalizeImportedState(parsed) {
         ? group.matches.map((match) => ({
             home: String(match.home || ""),
             away: String(match.away || ""),
+            round: Number.isInteger(match.round) ? match.round : undefined,
+            slot: Number.isInteger(match.slot) ? match.slot : undefined,
             winner: match.winner || null,
           }))
         : buildMatches([]),

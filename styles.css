@@ -463,7 +463,46 @@ textarea::placeholder {
 
 .matches-list {
   display: grid;
+  gap: 10px;
+}
+
+.fixture-round {
+  display: grid;
   gap: 8px;
+  padding: 9px;
+  border: 1px solid #edf2f7;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #ffffff, #fafcff);
+}
+
+.fixture-round-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.fixture-matches {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bye-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 70%;
+  border-radius: 999px;
+  padding: 0.18rem 0.52rem;
+  border: 1px solid #ead39d;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-weight: 750;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .match-row,
@@ -623,6 +662,10 @@ textarea::placeholder {
     flex-direction: column;
   }
 
+  .fixture-matches {
+    grid-template-columns: 1fr;
+  }
+
   .match-row > .match-actions {
     justify-content: flex-start;
   }
@@ -649,6 +692,15 @@ textarea::placeholder {
     display: grid;
     grid-template-columns: 1fr;
     width: 100%;
+  }
+
+  .fixture-round-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bye-badge {
+    max-width: 100%;
   }
 
   button,
