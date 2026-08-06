@@ -5,14 +5,14 @@ module.exports = async function handler(req, res) {
   try {
     res.setHeader("Cache-Control", "no-store");
 
-    const supabaseUrl = cleanEnvValue(process.env.SUPABASE_URL);
+    const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL);
     const serviceKey = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
     if (!supabaseUrl || !serviceKey) {
       return sendJson(res, 500, { error: "Missing Supabase environment variables." });
     }
 
-    if (!isValidSupabaseUrl(supabaseUrl)) {
+    if (!supabaseUrl || !isValidSupabaseUrl(supabaseUrl)) {
       return sendJson(res, 500, { error: "Invalid SUPABASE_URL. It should look like https://xxxxx.supabase.co" });
     }
 
@@ -97,6 +97,17 @@ function supabaseHeaders(serviceKey) {
 
 function cleanEnvValue(value) {
   return String(value || "").trim().replace(/^["']|["']$/g, "");
+}
+
+function normalizeSupabaseUrl(value) {
+  const cleaned = cleanEnvValue(value);
+  if (!cleaned) return "";
+
+  try {
+    return new URL(cleaned).origin;
+  } catch {
+    return cleaned.replace(/\/+$/, "");
+  }
 }
 
 function isValidSupabaseUrl(value) {
