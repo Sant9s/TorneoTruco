@@ -2,25 +2,36 @@ const ROW_ID = "main";
 const TABLE_NAME = "tournament_state";
 
 module.exports = async function handler(req, res) {
-  res.setHeader("Cache-Control", "no-store");
+  try {
+    res.setHeader("Cache-Control", "no-store");
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = cleanEnvValue(process.env.SUPABASE_URL);
+    const serviceKey = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-  if (!supabaseUrl || !serviceKey) {
-    return sendJson(res, 500, { error: "Missing Supabase environment variables." });
+    if (!supabaseUrl || !serviceKey) {
+      return sendJson(res, 500, { error: "Missing Supabase environment variables." });
+    }
+
+    if (!isValidSupabaseUrl(supabaseUrl)) {
+      return sendJson(res, 500, { error: "Invalid SUPABASE_URL. It should look like https://xxxxx.supabase.co" });
+    }
+
+    if (req.method === "GET") {
+      return getState(req, res, supabaseUrl, serviceKey);
+    }
+
+    if (req.method === "PUT") {
+      return putState(req, res, supabaseUrl, serviceKey);
+    }
+
+    res.setHeader("Allow", "GET, PUT");
+    return sendJson(res, 405, { error: "Method not allowed." });
+  } catch (error) {
+    return sendJson(res, 500, {
+      error: "Serverless function failed.",
+      detail: error instanceof Error ? error.message : String(error),
+    });
   }
-
-  if (req.method === "GET") {
-    return getState(req, res, supabaseUrl, serviceKey);
-  }
-
-  if (req.method === "PUT") {
-    return putState(req, res, supabaseUrl, serviceKey);
-  }
-
-  res.setHeader("Allow", "GET, PUT");
-  return sendJson(res, 405, { error: "Method not allowed." });
 };
 
 async function getState(req, res, supabaseUrl, serviceKey) {
@@ -82,6 +93,19 @@ function supabaseHeaders(serviceKey) {
     apikey: serviceKey,
     Authorization: `Bearer ${serviceKey}`,
   };
+}
+
+function cleanEnvValue(value) {
+  return String(value || "").trim().replace(/^["']|["']$/g, "");
+}
+
+function isValidSupabaseUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
 }
 
 function sendJson(res, status, payload) {
