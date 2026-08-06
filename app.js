@@ -485,7 +485,7 @@ function reconcilePlayoffs() {
   }
 
   if (changed) {
-    state.message = "Los playoffs se reajustaron porque cambiÃ³ un resultado anterior.";
+    state.message = "Los playoffs se reajustaron porque cambio un resultado anterior.";
   }
 }
 
