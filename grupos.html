@@ -1,0 +1,49 @@
+﻿<!doctype html>
+<html lang="es" data-page="groups">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Torneo Admin - Grupos</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="groups">
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Administrador de torneo</p>
+          <h1>Grupos</h1>
+          <p id="pageSubtitle" class="page-subtitle"></p>
+        </div>
+        <div class="topbar-stats" id="topbarStats"></div>
+      </header>
+
+      <nav class="page-nav">
+        <a href="./equipos.html">Equipos</a>
+        <a class="active" href="./grupos.html">Grupos</a>
+        <a href="./playoffs.html">Playoffs</a>
+      </nav>
+
+      <main class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Fase de grupos</h2>
+              <p>Genera los grupos una sola vez y luego marca ganador por partido. Cada victoria vale 1 y el orden se define por W-L.</p>
+            </div>
+            <div class="toolbar">
+              <button id="generateGroupsBtn" type="button" class="accent">Generar grupos</button>
+              <button id="createPlayoffsBtn" type="button" class="accent">Crear playoffs</button>
+              <button id="resetBtn" type="button" class="danger">Limpiar</button>
+            </div>
+          </div>
+          <div id="groupsSummary" class="summary"></div>
+          <div id="messageBox" class="status"></div>
+          <div id="groupsContainer" class="groups-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
+

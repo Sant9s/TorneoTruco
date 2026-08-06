@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es" data-page="playoffs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Torneo Admin - Playoffs</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="playoffs">
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Administrador de torneo</p>
+          <h1>Playoffs</h1>
+          <p id="pageSubtitle" class="page-subtitle"></p>
+        </div>
+        <div class="topbar-stats" id="topbarStats"></div>
+      </header>
+
+      <nav class="page-nav">
+        <a href="./equipos.html">Equipos</a>
+        <a href="./grupos.html">Grupos</a>
+        <a class="active" href="./playoffs.html">Playoffs</a>
+      </nav>
+
+      <main class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Eliminacion directa</h2>
+              <p>Se llena cuando ya hay un ganador en cada grupo. Cada ronda depende de la anterior.</p>
+            </div>
+            <div class="toolbar">
+              <button id="createPlayoffsBtn" type="button" class="accent">Crear playoffs</button>
+              <button id="resetBtn" type="button" class="danger">Limpiar</button>
+            </div>
+          </div>
+          <div id="messageBox" class="status"></div>
+          <div id="playoffsContainer" class="playoffs-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
