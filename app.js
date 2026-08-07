@@ -45,6 +45,7 @@ function cacheElements() {
     "loadTeamsBtn",
     "generateGroupsBtn",
     "createPlayoffsBtn",
+    "simulatePlayoffsBtn",
     "resetBtn",
     "exportBtn",
     "importInput",
@@ -133,6 +134,10 @@ function bindEvents() {
     state.message = "Playoffs creados desde los 16 ganadores de grupo.";
     saveState();
     render();
+  });
+
+  els.simulatePlayoffsBtn?.addEventListener("click", () => {
+    simulatePlayoffs();
   });
 
   els.resetBtn?.addEventListener("click", () => {
@@ -234,6 +239,10 @@ function render(reconcile = true) {
 
   if (els.createPlayoffsBtn) {
     els.createPlayoffsBtn.disabled = !canCreatePlayoffs(loadedGroups);
+  }
+
+  if (els.simulatePlayoffsBtn) {
+    els.simulatePlayoffsBtn.disabled = !state.playoffs;
   }
 
   renderGroups(loadedGroups);
@@ -697,6 +706,30 @@ function clearPlayoffWinner(roundIndex, matchIndex) {
   render(false);
 }
 
+function simulatePlayoffs() {
+  if (!state.playoffs) {
+    state.message = "Primero cree los playoffs.";
+    saveState();
+    render();
+    return;
+  }
+
+  for (let roundIndex = 0; roundIndex < state.playoffs.rounds.length; roundIndex += 1) {
+    const round = state.playoffs.rounds[roundIndex];
+    round.matches.forEach((match) => {
+      const team1 = resolveSource(match.source1);
+      const team2 = resolveSource(match.source2);
+      if (!team1 || !team2) return;
+      match.winner = Math.random() < 0.5 ? team1 : team2;
+    });
+  }
+
+  reconcilePlayoffs();
+  state.message = "Playoffs simulados automaticamente.";
+  saveState();
+  render(false);
+}
+
 function reconcilePlayoffs() {
   if (!state.playoffs) return;
   let changed = false;
@@ -1000,4 +1033,3 @@ function saveLocalState() {
     // ignore storage failures
   }
 }
-

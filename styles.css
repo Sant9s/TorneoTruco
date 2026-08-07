@@ -677,12 +677,30 @@ textarea::placeholder {
 
 .round-panel {
   min-height: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .round-matches {
   display: grid;
   gap: 8px;
+}
+
+.round-match {
+  display: grid;
+  gap: 8px;
+}
+
+.round-match .team-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.round-match .team-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .round-match .match-actions {
