@@ -44,6 +44,7 @@ function cacheElements() {
     "fillDemoBtn",
     "loadTeamsBtn",
     "generateGroupsBtn",
+    "simulateGroupsBtn",
     "createPlayoffsBtn",
     "simulatePlayoffsBtn",
     "resetBtn",
@@ -100,6 +101,10 @@ function bindEvents() {
     state.message = "Grupos generados aleatoriamente.";
     saveState();
     render();
+  });
+
+  els.simulateGroupsBtn?.addEventListener("click", () => {
+    simulateGroups();
   });
 
   els.createPlayoffsBtn?.addEventListener("click", () => {
@@ -239,6 +244,10 @@ function render(reconcile = true) {
 
   if (els.createPlayoffsBtn) {
     els.createPlayoffsBtn.disabled = !canCreatePlayoffs(loadedGroups);
+  }
+
+  if (els.simulateGroupsBtn) {
+    els.simulateGroupsBtn.disabled = !loadedGroups.length;
   }
 
   if (els.simulatePlayoffsBtn) {
@@ -702,6 +711,28 @@ function clearPlayoffWinner(roundIndex, matchIndex) {
   match.winner = null;
   state.message = `Resultado quitado en ${ROUND_NAMES[roundIndex]}.`;
   reconcilePlayoffs();
+  saveState();
+  render(false);
+}
+
+function simulateGroups() {
+  if (!state.groups.length) {
+    state.message = "Primero genere los grupos.";
+    saveState();
+    render();
+    return;
+  }
+
+  state.groups.forEach((group) => {
+    group.matches.forEach((match) => {
+      if (match.home && match.away) {
+        match.winner = Math.random() < 0.5 ? match.home : match.away;
+      }
+    });
+  });
+
+  reconcilePlayoffs();
+  state.message = "Grupos simulados automaticamente.";
   saveState();
   render(false);
 }
