@@ -48,7 +48,8 @@ function cacheElements() {
     "simulateGroupsBtn",
     "createPlayoffsBtn",
     "simulatePlayoffsBtn",
-    "resetBtn",
+    "clearGeneratedBtn",
+    "resetAllBtn",
     "exportBtn",
     "importInput",
     "groupsContainer",
@@ -167,11 +168,12 @@ function bindEvents() {
     simulatePlayoffs();
   });
 
-  els.resetBtn?.addEventListener("click", () => {
-    state = defaultState();
-    saveState();
-    syncTextarea();
-    render();
+  els.clearGeneratedBtn?.addEventListener("click", () => {
+    clearGeneratedData();
+  });
+
+  els.resetAllBtn?.addEventListener("click", () => {
+    resetAllData();
   });
 
   els.exportBtn?.addEventListener("click", () => {
@@ -279,6 +281,14 @@ function render(reconcile = true) {
 
   if (els.simulatePlayoffsBtn) {
     els.simulatePlayoffsBtn.disabled = !state.playoffs;
+  }
+
+  if (els.clearGeneratedBtn) {
+    els.clearGeneratedBtn.disabled = !loadedGroups.length && !state.playoffs;
+  }
+
+  if (els.resetAllBtn) {
+    els.resetAllBtn.disabled = !roster.length && !loadedGroups.length && !state.playoffs;
   }
 
   renderGroups(loadedGroups);
@@ -401,6 +411,29 @@ function invalidateGeneratedData(message) {
     state.playoffs = null;
     state.message = message;
   }
+}
+
+function clearGeneratedData() {
+  if (!state.groups.length && !state.playoffs) {
+    state.message = "No hay grupos ni playoffs para limpiar.";
+    saveState();
+    render();
+    return;
+  }
+
+  state.groups = [];
+  state.playoffs = null;
+  state.message = "Se limpiaron los grupos y playoffs, pero se mantuvieron los equipos.";
+  saveState();
+  render();
+}
+
+function resetAllData() {
+  state = defaultState();
+  state.teamsData = [];
+  saveState();
+  syncTextarea();
+  render();
 }
 
 async function initializeRemoteState() {
