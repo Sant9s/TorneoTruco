@@ -14,6 +14,14 @@
   --accent-soft: #e9f1ff;
   --success: #16844b;
   --success-soft: #eaf7ef;
+  --celeste: #2b77c6;
+  --celeste-soft: #e1f0ff;
+  --green: #1f8f4e;
+  --green-soft: #e3f6ea;
+  --yellow: #b88400;
+  --yellow-soft: #fff0bf;
+  --cream: #9d6c2c;
+  --cream-soft: #f5e7c9;
   --warning: #b66b12;
   --warning-soft: #fff5df;
   --danger: #bf3f3f;
@@ -364,6 +372,26 @@ textarea::placeholder {
   overflow: hidden;
 }
 
+.group-panel.theme-celeste {
+  border-color: rgba(43, 119, 198, 0.28);
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.group-panel.theme-green {
+  border-color: rgba(31, 143, 78, 0.26);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fdf9 100%);
+}
+
+.group-panel.theme-yellow {
+  border-color: rgba(184, 132, 0, 0.24);
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf4 100%);
+}
+
+.group-panel.theme-cream {
+  border-color: rgba(157, 108, 44, 0.22);
+  background: linear-gradient(180deg, #ffffff 0%, #fffaf1 100%);
+}
+
 .group-panel::before,
 .round-panel::before {
   content: "";
@@ -371,6 +399,22 @@ textarea::placeholder {
   height: 3px;
   margin: -12px -12px 10px;
   background: linear-gradient(90deg, var(--accent), var(--success));
+}
+
+.group-panel.theme-celeste::before {
+  background: linear-gradient(90deg, var(--celeste), var(--celeste-soft));
+}
+
+.group-panel.theme-green::before {
+  background: linear-gradient(90deg, var(--green), var(--green-soft));
+}
+
+.group-panel.theme-yellow::before {
+  background: linear-gradient(90deg, var(--yellow), var(--yellow-soft));
+}
+
+.group-panel.theme-cream::before {
+  background: linear-gradient(90deg, var(--cream), var(--cream-soft));
 }
 
 .group-header,
@@ -540,11 +584,63 @@ textarea::placeholder {
 }
 
 .team-name {
+  display: block;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 650;
+}
+
+.team-display {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.team-display-name {
+  min-width: 0;
+}
+
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+.team-chip.theme-celeste {
+  color: #1f5f9d;
+  border-color: rgba(43, 119, 198, 0.24);
+  background: var(--celeste-soft);
+}
+
+.team-chip.theme-green {
+  color: #1e7c46;
+  border-color: rgba(31, 143, 78, 0.24);
+  background: var(--green-soft);
+}
+
+.team-chip.theme-yellow {
+  color: #9a6d00;
+  border-color: rgba(184, 132, 0, 0.24);
+  background: var(--yellow-soft);
+}
+
+.team-chip.theme-cream {
+  color: #8a5f24;
+  border-color: rgba(157, 108, 44, 0.24);
+  background: var(--cream-soft);
 }
 
 .match-actions {
@@ -598,6 +694,10 @@ textarea::placeholder {
   color: var(--success);
   font-size: 12px;
   font-weight: 800;
+}
+
+.winner-line .team-display {
+  margin-left: 6px;
 }
 
 .empty {

@@ -5,6 +5,12 @@ const ROUND_NAMES = ["Octavos", "Cuartos", "Semifinales", "Final"];
 const PAGE = document.body.dataset.page || "teams";
 const REMOTE_SYNC_INTERVAL_MS = 5000;
 const REMOTE_SAVE_DELAY_MS = 450;
+const GROUP_THEMES = [
+  { name: "Celeste", className: "theme-celeste" },
+  { name: "Verde", className: "theme-green" },
+  { name: "Amarillo", className: "theme-yellow" },
+  { name: "Crema", className: "theme-cream" },
+];
 
 const els = {};
 
@@ -354,14 +360,16 @@ function renderGroups(groups) {
       const leader = standings[0]?.name || "Sin definir";
       const complete = group.matches.every((match) => match.winner);
       const played = group.matches.filter((match) => match.winner).length;
+      const groupTheme = getGroupTheme(group.index);
 
       return `
-        <article class="group-panel">
+        <article class="group-panel ${groupTheme.className}">
           <div class="group-header">
             <div class="group-title">
               <h3>Grupo ${group.name}</h3>
+              <span class="badge">${groupTheme.name}</span>
               <span class="badge ${complete ? "leader" : ""}">${complete ? "Listo" : "En curso"}</span>
-              <span class="badge">${leader}</span>
+              <span class="badge">${renderTeamBadgeHtml(leader)}</span>
             </div>
             <div class="group-note">${played}/10 partidos</div>
           </div>
@@ -380,7 +388,7 @@ function renderGroups(groups) {
                 .map(
                   (row, index) => `
                     <tr>
-                      <td>${index === 0 && complete ? `<strong>${escapeHtml(row.name)}</strong>` : escapeHtml(row.name)}</td>
+                      <td>${renderTeamCell(row.name, group, index === 0 && complete)}</td>
                       <td class="num">${row.played}</td>
                       <td class="num">${row.wins}</td>
                       <td class="num">${row.losses}</td>
@@ -433,7 +441,7 @@ function renderPlayoffs() {
                 return `
                   <div class="round-match">
                     <div class="team-row">
-                      <span class="team-name">${team1 ? escapeHtml(team1) : "Esperando ganador"}</span>
+                      <span class="team-name">${team1 ? renderResolvedTeamHtml(team1) : "Esperando ganador"}</span>
                       <button
                         class="choice ${winner1 ? "selected" : ""}"
                         data-action="playoff-win"
@@ -444,7 +452,7 @@ function renderPlayoffs() {
                       >Gana</button>
                     </div>
                     <div class="team-row">
-                      <span class="team-name">${team2 ? escapeHtml(team2) : "Esperando ganador"}</span>
+                      <span class="team-name">${team2 ? renderResolvedTeamHtml(team2) : "Esperando ganador"}</span>
                       <button
                         class="choice ${winner2 ? "selected" : ""}"
                         data-action="playoff-win"
@@ -457,7 +465,7 @@ function renderPlayoffs() {
                     <div class="match-actions">
                       <button data-action="clear-playoff" data-round="${roundIndex}" data-match="${matchIndex}">Quitar</button>
                     </div>
-                    ${winner ? `<div class="winner-line">Clasifica: ${escapeHtml(winner)}</div>` : ""}
+                    ${winner ? `<div class="winner-line">Clasifica: ${renderResolvedTeamHtml(winner)}</div>` : ""}
                   </div>
                 `;
               })
@@ -480,7 +488,7 @@ function renderGroupFixture(group) {
       (round) => `
         <section class="fixture-round">
           <div class="fixture-round-head">
-            <strong>Fecha ${round.number}</strong>
+            <strong>Partido ${round.number}</strong>
             <span class="bye-badge">Libre: ${escapeHtml(round.bye || "Sin definir")}</span>
           </div>
           <div class="fixture-matches">
@@ -492,13 +500,13 @@ function renderGroupFixture(group) {
                   <div class="match-row">
                     <div class="match-teams">
                       <div class="team-row">
-                        <span class="team-name">${escapeHtml(match.home)}</span>
+                        <span class="team-name">${renderGroupTeamHtml(group, match.home)}</span>
                         <div class="match-actions">
                           <button class="choice ${leftSelected ? "selected" : ""}" data-action="group-win" data-group="${group.index}" data-match="${matchIndex}" data-team="${escapeAttr(match.home)}">Gana</button>
                         </div>
                       </div>
                       <div class="team-row">
-                        <span class="team-name">${escapeHtml(match.away)}</span>
+                        <span class="team-name">${renderGroupTeamHtml(group, match.away)}</span>
                         <div class="match-actions">
                           <button class="choice ${rightSelected ? "selected" : ""}" data-action="group-win" data-group="${group.index}" data-match="${matchIndex}" data-team="${escapeAttr(match.away)}">Gana</button>
                         </div>
@@ -543,6 +551,67 @@ function getFixtureRounds(group) {
   });
 
   return rounds;
+}
+
+function getGroupTheme(groupIndex) {
+  return GROUP_THEMES[Math.floor(groupIndex / 4)] || GROUP_THEMES[0];
+}
+
+function getTeamNumber(groupIndex, teamIndex) {
+  return (groupIndex % 4) * 5 + teamIndex + 1;
+}
+
+function getTeamMetaFromGroup(groupIndex, teamName) {
+  const group = state.groups?.[groupIndex];
+  if (!group) return null;
+  const teamIndex = group.teams.indexOf(teamName);
+  if (teamIndex < 0) return null;
+  const theme = getGroupTheme(groupIndex);
+  return {
+    theme,
+    label: `${theme.name} ${getTeamNumber(groupIndex, teamIndex)}`,
+    teamName,
+  };
+}
+
+function getTeamMetaByName(teamName) {
+  for (const group of state.groups || []) {
+    const teamIndex = group.teams.indexOf(teamName);
+    if (teamIndex < 0) continue;
+    const theme = getGroupTheme(group.index);
+    return {
+      theme,
+      label: `${theme.name} ${getTeamNumber(group.index, teamIndex)}`,
+      teamName,
+    };
+  }
+  return null;
+}
+
+function renderTeamBadgeHtml(teamName) {
+  if (!teamName) return "";
+  const meta = getTeamMetaByName(teamName);
+  if (!meta) return escapeHtml(teamName);
+  return `<span class="team-chip ${meta.theme.className}">${escapeHtml(meta.label)}</span>`;
+}
+
+function renderResolvedTeamHtml(teamName) {
+  if (!teamName) return "";
+  const meta = getTeamMetaByName(teamName);
+  if (!meta) return escapeHtml(teamName);
+  return `<span class="team-display"><span class="team-chip ${meta.theme.className}">${escapeHtml(meta.label)}</span><span class="team-display-name">${escapeHtml(teamName)}</span></span>`;
+}
+
+function renderGroupTeamHtml(group, teamName) {
+  if (!teamName) return "";
+  const meta = getTeamMetaFromGroup(group.index, teamName);
+  if (!meta) return escapeHtml(teamName);
+  return `<span class="team-display"><span class="team-chip ${meta.theme.className}">${escapeHtml(meta.label)}</span><span class="team-display-name">${escapeHtml(teamName)}</span></span>`;
+}
+
+function renderTeamCell(teamName, group, strong = false) {
+  const content = renderGroupTeamHtml(group, teamName);
+  return strong ? `<strong>${content}</strong>` : content;
 }
 
 function onActionClick(event) {
