@@ -18,10 +18,10 @@
   --celeste-soft: #e1f0ff;
   --green: #1f8f4e;
   --green-soft: #e3f6ea;
-  --yellow: #b88400;
-  --yellow-soft: #fff0bf;
-  --cream: #9d6c2c;
-  --cream-soft: #f5e7c9;
+  --yellow: #c79200;
+  --yellow-soft: #fff2b5;
+  --cream: #b98b57;
+  --cream-soft: #fbebd6;
   --warning: #b66b12;
   --warning-soft: #fff5df;
   --danger: #bf3f3f;
@@ -383,13 +383,13 @@ textarea::placeholder {
 }
 
 .group-panel.theme-yellow {
-  border-color: rgba(184, 132, 0, 0.24);
-  background: linear-gradient(180deg, #ffffff 0%, #fffdf4 100%);
+  border-color: rgba(199, 146, 0, 0.24);
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf0 100%);
 }
 
 .group-panel.theme-cream {
-  border-color: rgba(157, 108, 44, 0.22);
-  background: linear-gradient(180deg, #ffffff 0%, #fffaf1 100%);
+  border-color: rgba(185, 139, 87, 0.22);
+  background: linear-gradient(180deg, #ffffff 0%, #fff6ec 100%);
 }
 
 .group-panel::before,
@@ -632,14 +632,14 @@ textarea::placeholder {
 }
 
 .team-chip.theme-yellow {
-  color: #9a6d00;
-  border-color: rgba(184, 132, 0, 0.24);
+  color: #8f6500;
+  border-color: rgba(199, 146, 0, 0.24);
   background: var(--yellow-soft);
 }
 
 .team-chip.theme-cream {
-  color: #8a5f24;
-  border-color: rgba(157, 108, 44, 0.24);
+  color: #8b6238;
+  border-color: rgba(185, 139, 87, 0.24);
   background: var(--cream-soft);
 }
 
