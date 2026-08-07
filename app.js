@@ -16,6 +16,7 @@ const els = {};
 
 const defaultState = () => ({
   teamsText: "",
+  teamsData: [],
   groups: [],
   playoffs: null,
   message: "Pegue 80 equipos para arrancar.",
@@ -52,6 +53,7 @@ function cacheElements() {
     "importInput",
     "groupsContainer",
     "playoffsContainer",
+    "teamsRoster",
     "messageBox",
     "groupsSummary",
     "topbarStats",
@@ -65,7 +67,8 @@ function cacheElements() {
 
 function bindEvents() {
   els.fillDemoBtn?.addEventListener("click", () => {
-    state.teamsText = buildDemoTeams();
+    state.teamsData = buildDemoTeams();
+    state.teamsText = teamsDataToText(state.teamsData);
     state.message = "Demo cargado con 80 equipos.";
     saveState();
     syncTextarea();
@@ -74,13 +77,23 @@ function bindEvents() {
 
   els.loadTeamsBtn?.addEventListener("click", () => {
     const teams = parseTeams(els.teamsInput.value);
-    if (teams.length !== 80) {
-      state.message = `Se necesitan 80 equipos. Ahora hay ${teams.length}.`;
+    const roster = createRosterFromNames(teams, state.teamsData);
+    const missingName = roster.some((entry) => !entry.name);
+    const missingSex = roster.some((entry) => !entry.sex);
+    if (roster.length !== 80 || missingName) {
+      state.message = `Se necesitan 80 equipos. Ahora hay ${roster.filter((entry) => entry.name).length}.`;
       saveState();
       render();
       return;
     }
-    state.teamsText = teams.join("\n");
+    if (missingSex) {
+      state.message = "Complete el sexo de todos los participantes antes de guardar.";
+      saveState();
+      render();
+      return;
+    }
+    state.teamsData = roster;
+    state.teamsText = teamsDataToText(roster);
     state.groups = [];
     state.playoffs = null;
     state.message = "Equipos guardados. Entre a Grupos y pulse Generar grupos.";
@@ -89,16 +102,25 @@ function bindEvents() {
   });
 
   els.generateGroupsBtn?.addEventListener("click", () => {
-    const teams = parseTeams(state.teamsText);
-    if (teams.length !== 80) {
+    const roster = getRosterEntries();
+    const validNames = roster.filter((entry) => entry.name);
+    if (validNames.length !== 80) {
       state.message = "Primero cargue exactamente 80 equipos.";
       saveState();
       render();
       return;
     }
-    state.groups = buildGroups(shuffleArray(teams));
+    if (roster.some((entry) => !entry.name || !entry.sex)) {
+      state.message = "Complete el sexo de todos los participantes antes de generar grupos.";
+      saveState();
+      render();
+      return;
+    }
+    state.teamsData = roster;
+    state.teamsText = teamsDataToText(roster);
+    state.groups = buildBalancedGroups(shuffleArray(roster));
     state.playoffs = null;
-    state.message = "Grupos generados aleatoriamente.";
+    state.message = "Grupos generados equilibrando hombres y mujeres.";
     saveState();
     render();
   });
@@ -184,7 +206,8 @@ function bindEvents() {
 
   els.teamsInput?.addEventListener("input", () => {
     const hadGeneratedData = state.groups.length || state.playoffs;
-    state.teamsText = els.teamsInput.value;
+    state.teamsData = createRosterFromNames(parseTeams(els.teamsInput.value), state.teamsData);
+    state.teamsText = teamsDataToText(state.teamsData);
     if (hadGeneratedData) {
       state.groups = [];
       state.playoffs = null;
@@ -193,17 +216,20 @@ function bindEvents() {
     saveState();
     render(false);
   });
+
+  els.teamsRoster?.addEventListener("input", onRosterEdit);
+  els.teamsRoster?.addEventListener("change", onRosterEdit);
 }
 
 function syncTextarea() {
   if (els.teamsInput) {
-    els.teamsInput.value = state.teamsText || "";
+    els.teamsInput.value = teamsDataToText(getRosterEntries());
   }
 }
 
 function render(reconcile = true) {
   if (reconcile) reconcilePlayoffs();
-  const teams = parseTeams(state.teamsText);
+  const roster = getRosterEntries();
   const loadedGroups = state.groups;
   const groupStats = getGlobalStats(loadedGroups);
 
@@ -212,7 +238,7 @@ function render(reconcile = true) {
   }
   if (els.topbarStats) {
     els.topbarStats.innerHTML = [
-      pill(`${teams.length}/80 equipos`),
+      pill(`${roster.length}/80 equipos`),
       pill(`${loadedGroups.length}/16 grupos`),
       pill(`${groupStats.played}/160 partidos jugados`),
       pill(`${groupStats.finishedGroups}/16 grupos completos`),
@@ -220,8 +246,9 @@ function render(reconcile = true) {
     ].join("");
   }
   if (els.teamsSummary) {
-    els.teamsSummary.textContent = teams.length
-      ? `Total de equipos: ${teams.length}.`
+    const genderStats = getGenderStats(roster);
+    els.teamsSummary.textContent = roster.length
+      ? `Total de equipos: ${roster.length}. Hombres: ${genderStats.hombres}. Mujeres: ${genderStats.mujeres}.`
       : "Todavia no hay equipos cargados.";
   }
   if (els.groupsSummary) {
@@ -256,7 +283,124 @@ function render(reconcile = true) {
 
   renderGroups(loadedGroups);
   renderPlayoffs();
+  renderTeamsRoster();
   saveLocalState();
+}
+
+function renderTeamsRoster() {
+  if (!els.teamsRoster) return;
+
+  const roster = getRosterEntries();
+  if (!roster.length) {
+    els.teamsRoster.innerHTML = `<div class="empty">Pegue o cargue los 80 nombres para completar el sexo de cada participante.</div>`;
+    return;
+  }
+
+  els.teamsRoster.innerHTML = roster
+    .map(
+      (entry, index) => `
+        <div class="team-entry">
+          <div class="team-entry-index">${String(index + 1).padStart(2, "0")}</div>
+          <input
+            class="team-entry-name"
+            type="text"
+            value="${escapeAttr(entry.name)}"
+            data-roster-field="name"
+            data-roster-index="${index}"
+            placeholder="Nombre del participante"
+          />
+          <select class="team-entry-sex" data-roster-field="sex" data-roster-index="${index}">
+            <option value="">Sexo</option>
+            <option value="hombre" ${entry.sex === "hombre" ? "selected" : ""}>Hombre</option>
+            <option value="mujer" ${entry.sex === "mujer" ? "selected" : ""}>Mujer</option>
+          </select>
+        </div>
+      `
+    )
+    .join("");
+}
+
+function onRosterEdit(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  const index = Number(target.dataset.rosterIndex);
+  const field = target.dataset.rosterField;
+  if (!Number.isInteger(index) || !field) return;
+
+  const roster = getRosterEntries();
+  if (!roster[index]) return;
+
+  if (field === "name") {
+    roster[index] = {
+      ...roster[index],
+      name: target.value.trim(),
+    };
+  } else if (field === "sex") {
+    roster[index] = {
+      ...roster[index],
+      sex: normalizeSex(target.value),
+    };
+  }
+
+  state.teamsData = roster;
+  state.teamsText = teamsDataToText(roster);
+  invalidateGeneratedData("Se modifico un participante. Vuelva a generar los grupos.");
+  saveState();
+  render(false);
+}
+
+function getRosterEntries() {
+  if (Array.isArray(state.teamsData) && state.teamsData.length) {
+    return state.teamsData
+      .map((entry) => ({
+        name: String(entry?.name || "").trim(),
+        sex: normalizeSex(entry?.sex),
+      }))
+      .slice(0, 80);
+  }
+
+  return createRosterFromNames(parseTeams(state.teamsText), []);
+}
+
+function createRosterFromNames(names, previousRoster) {
+  const prev = Array.isArray(previousRoster) ? previousRoster : [];
+  return names.slice(0, 80).map((name, index) => ({
+    name: String(name || "").trim(),
+    sex: normalizeSex(prev[index]?.sex),
+  }));
+}
+
+function teamsDataToText(roster) {
+  return (Array.isArray(roster) ? roster : [])
+    .map((entry) => String(entry?.name || "").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+function normalizeSex(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "hombre" || normalized === "masculino" || normalized === "h") return "hombre";
+  if (normalized === "mujer" || normalized === "femenino" || normalized === "m") return "mujer";
+  return "";
+}
+
+function getGenderStats(roster) {
+  return (Array.isArray(roster) ? roster : []).reduce(
+    (accumulator, entry) => {
+      if (entry.sex === "hombre") accumulator.hombres += 1;
+      if (entry.sex === "mujer") accumulator.mujeres += 1;
+      return accumulator;
+    },
+    { hombres: 0, mujeres: 0 }
+  );
+}
+
+function invalidateGeneratedData(message) {
+  if (state.groups.length || state.playoffs) {
+    state.groups = [];
+    state.playoffs = null;
+    state.message = message;
+  }
 }
 
 async function initializeRemoteState() {
@@ -582,7 +726,7 @@ function getTeamNumber(groupIndex, teamIndex) {
 function getTeamMetaFromGroup(groupIndex, teamName) {
   const group = state.groups?.[groupIndex];
   if (!group) return null;
-  const teamIndex = group.teams.indexOf(teamName);
+  const teamIndex = (group.teams || []).findIndex((entry) => entry?.name === teamName);
   if (teamIndex < 0) return null;
   const theme = getGroupTheme(groupIndex);
   return {
@@ -594,7 +738,7 @@ function getTeamMetaFromGroup(groupIndex, teamName) {
 
 function getTeamMetaByName(teamName) {
   for (const group of state.groups || []) {
-    const teamIndex = group.teams.indexOf(teamName);
+    const teamIndex = (group.teams || []).findIndex((entry) => entry?.name === teamName);
     if (teamIndex < 0) continue;
     const theme = getGroupTheme(group.index);
     return {
@@ -795,14 +939,34 @@ function resolveSource(source) {
   return null;
 }
 
-function buildGroups(teams) {
+function buildBalancedGroups(teams) {
+  const roster = Array.isArray(teams) ? teams.filter((entry) => entry?.name) : [];
+  const men = shuffleArray(roster.filter((entry) => entry.sex === "hombre"));
+  const women = shuffleArray(roster.filter((entry) => entry.sex === "mujer"));
+  const groupCount = GROUP_NAMES.length;
+  const totalMen = men.length;
+  const baseMenPerGroup = Math.floor(totalMen / groupCount);
+  const extraMenGroups = totalMen % groupCount;
+  const groupIndexes = shuffleArray(Array.from({ length: groupCount }, (_, index) => index));
+  const menTargets = Array(groupCount).fill(baseMenPerGroup);
+
+  groupIndexes.slice(0, extraMenGroups).forEach((groupIndex) => {
+    menTargets[groupIndex] += 1;
+  });
+
   return GROUP_NAMES.map((name, index) => {
-    const groupTeams = teams.slice(index * 5, index * 5 + 5);
+    const menCount = menTargets[index];
+    const womenCount = 5 - menCount;
+    const groupTeams = shuffleArray([
+      ...men.splice(0, menCount),
+      ...women.splice(0, womenCount),
+    ]);
+
     return {
       index,
       name,
       teams: groupTeams,
-      matches: buildMatches(groupTeams),
+      matches: buildMatches(groupTeams.map((entry) => entry.name)),
     };
   });
 }
@@ -851,8 +1015,10 @@ function buildMatches(teams) {
 function getStandings(group) {
   const rows = new Map();
   group.teams.forEach((team) => {
-    rows.set(team, {
-      name: team,
+    const name = typeof team === "string" ? team : String(team?.name || "").trim();
+    if (!name) return;
+    rows.set(name, {
+      name,
       played: 0,
       wins: 0,
       losses: 0,
@@ -971,7 +1137,10 @@ function createPlayoffs(groupWinners) {
 }
 
 function buildDemoTeams() {
-  return Array.from({ length: 80 }, (_, index) => `Equipo ${String(index + 1).padStart(2, "0")}`).join("\n");
+  return Array.from({ length: 80 }, (_, index) => ({
+    name: `Equipo ${String(index + 1).padStart(2, "0")}`,
+    sex: index % 2 === 0 ? "hombre" : "mujer",
+  }));
 }
 
 function parseTeams(value) {
@@ -1001,6 +1170,14 @@ function escapeAttr(value) {
 function normalizeImportedState(parsed) {
   const next = defaultState();
   next.teamsText = typeof parsed?.teamsText === "string" ? parsed.teamsText : "";
+  next.teamsData = Array.isArray(parsed?.teamsData) && parsed.teamsData.length
+    ? parsed.teamsData
+        .map((entry) => ({
+          name: String(entry?.name || "").trim(),
+          sex: normalizeSex(entry?.sex),
+        }))
+        .filter((entry) => entry.name)
+    : createRosterFromNames(parseTeams(next.teamsText), []);
   next.groups = Array.isArray(parsed?.groups) ? parsed.groups : [];
   next.playoffs = parsed?.playoffs && Array.isArray(parsed.playoffs.rounds) ? parsed.playoffs : null;
   if (next.groups.length && next.groups.length !== 16) {
@@ -1010,7 +1187,19 @@ function normalizeImportedState(parsed) {
     next.groups = next.groups.map((group, index) => ({
       index,
       name: GROUP_NAMES[index],
-      teams: Array.isArray(group.teams) ? group.teams.slice(0, 5) : [],
+      teams: Array.isArray(group.teams)
+        ? group.teams
+            .slice(0, 5)
+            .map((team) =>
+              typeof team === "string"
+                ? { name: team, sex: "" }
+                : {
+                    name: String(team?.name || "").trim(),
+                    sex: normalizeSex(team?.sex),
+                  }
+            )
+            .filter((team) => team.name)
+        : [],
       matches: Array.isArray(group.matches)
         ? group.matches.map((match) => ({
             home: String(match.home || ""),
@@ -1027,7 +1216,7 @@ function normalizeImportedState(parsed) {
 
 function hasTournamentData(value) {
   return Boolean(
-    parseTeams(value?.teamsText || "").length ||
+    (Array.isArray(value?.teamsData) ? value.teamsData.length : parseTeams(value?.teamsText || "").length) ||
       value?.groups?.length ||
       value?.playoffs
   );
@@ -1036,6 +1225,7 @@ function hasTournamentData(value) {
 function buildPersistedState(value) {
   return {
     teamsText: value.teamsText || "",
+    teamsData: Array.isArray(value.teamsData) ? value.teamsData : [],
     groups: Array.isArray(value.groups) ? value.groups : [],
     playoffs: value.playoffs || null,
     message: value.message || "",
@@ -1045,10 +1235,20 @@ function buildPersistedState(value) {
 function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState();
-    return normalizeImportedState(JSON.parse(raw));
+    if (!raw) {
+      const next = defaultState();
+      next.teamsData = createRosterFromNames(parseTeams(next.teamsText), []);
+      return next;
+    }
+    const next = normalizeImportedState(JSON.parse(raw));
+    if (!next.teamsData.length && next.teamsText) {
+      next.teamsData = createRosterFromNames(parseTeams(next.teamsText), []);
+    }
+    return next;
   } catch {
-    return defaultState();
+    const next = defaultState();
+    next.teamsData = createRosterFromNames(parseTeams(next.teamsText), []);
+    return next;
   }
 }
 

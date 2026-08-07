@@ -346,6 +346,76 @@ textarea::placeholder {
   margin-top: 12px;
 }
 
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: end;
+  margin-top: 4px;
+}
+
+.section-head h3 {
+  font-size: 15px;
+}
+
+.section-head p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+  max-width: 760px;
+}
+
+.teams-roster {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.team-entry {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 120px;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #e3eaf3;
+  border-radius: var(--radius);
+  padding: 8px;
+  background: #fff;
+}
+
+.team-entry-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.team-entry-name,
+.team-entry-sex {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  padding: 0.5rem 0.7rem;
+}
+
+.team-entry-name {
+  min-width: 0;
+}
+
+.team-entry-sex {
+  appearance: none;
+}
+
 .groups-grid,
 .playoffs-grid {
   display: grid;
@@ -763,6 +833,19 @@ textarea::placeholder {
     justify-content: flex-start;
   }
 
+  .section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .team-entry {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .team-entry-sex {
+    grid-column: 2;
+  }
+
   .page-nav {
     grid-template-columns: 1fr;
   }
@@ -830,6 +913,10 @@ textarea::placeholder {
     display: grid;
     grid-template-columns: 1fr;
     width: 100%;
+  }
+
+  .teams-roster {
+    max-height: none;
   }
 
   .fixture-round-head {

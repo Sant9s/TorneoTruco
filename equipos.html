@@ -28,7 +28,7 @@
           <div class="panel-head">
             <div>
               <h2>Cargar equipos</h2>
-              <p>Pegui los 80 nombres, uno por linea. Despues pasas a Grupos para generarlos de forma aleatoria.</p>
+              <p>Pegui los 80 nombres, uno por linea, y completa el sexo en el listado de participantes. Despues pasas a Grupos para generarlos de forma balanceada.</p>
             </div>
             <div class="toolbar">
               <button id="fillDemoBtn" type="button">Cargar demo</button>
@@ -42,6 +42,12 @@
             spellcheck="false"
             placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;...&#10;Equipo 80"
           ></textarea>
+
+          <div class="section-head">
+            <h3>Participantes</h3>
+            <p>Completa el sexo de cada participante para que los grupos queden balanceados al generarse.</p>
+          </div>
+          <div id="teamsRoster" class="teams-roster"></div>
 
           <div class="panel-foot">
             <div class="status" id="messageBox"></div>
