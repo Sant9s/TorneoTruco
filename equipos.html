@@ -1,71 +1,12 @@
 <!doctype html>
-<html lang="es" data-page="teams">
+<html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Torneo Admin - Equipos</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <meta http-equiv="refresh" content="0; url=./grupos.html" />
+    <title>Torneo Admin</title>
   </head>
-  <body data-page="teams">
-    <div class="app-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Administrador de torneo</p>
-          <h1>Equipos</h1>
-          <p id="pageSubtitle" class="page-subtitle"></p>
-        </div>
-        <div class="topbar-stats" id="topbarStats"></div>
-      </header>
-
-      <nav class="page-nav">
-        <a class="active" href="./equipos.html">Equipos</a>
-        <a href="./grupos.html">Grupos</a>
-        <a href="./playoffs.html">Playoffs</a>
-      </nav>
-
-      <main class="layout">
-        <section class="panel panel-wide">
-          <div class="panel-head">
-            <div>
-              <h2>Cargar equipos</h2>
-              <p>Pegui los 80 nombres, uno por linea, y completa el sexo en el listado de participantes. Despues pasas a Grupos para generarlos de forma balanceada.</p>
-            </div>
-            <div class="toolbar">
-              <button id="fillDemoBtn" type="button">Cargar demo</button>
-              <button id="loadTeamsBtn" type="button">Guardar equipos</button>
-              <button id="clearGeneratedBtn" type="button">Limpiar grupos</button>
-              <button id="resetAllBtn" type="button" class="danger">Limpiar todo</button>
-            </div>
-          </div>
-
-          <textarea
-            id="teamsInput"
-            spellcheck="false"
-            placeholder="Equipo 1&#10;Equipo 2&#10;Equipo 3&#10;...&#10;Equipo 80"
-          ></textarea>
-
-          <div class="section-head">
-            <h3>Participantes</h3>
-            <p>Completa el sexo de cada participante para que los grupos queden balanceados al generarse.</p>
-          </div>
-          <div id="teamsRoster" class="teams-roster"></div>
-
-          <div class="panel-foot">
-            <div class="status" id="messageBox"></div>
-            <div class="toolbar">
-              <button id="exportBtn" type="button">Exportar JSON</button>
-              <label class="file-label">
-                Importar JSON
-                <input id="importInput" type="file" accept="application/json" />
-              </label>
-            </div>
-          </div>
-
-          <div class="section-note" id="teamsSummary"></div>
-        </section>
-      </main>
-    </div>
-
-    <script src="./app.js"></script>
+  <body>
+    <p><a href="./grupos.html">Ir a la app</a></p>
   </body>
 </html>

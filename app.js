@@ -97,7 +97,7 @@ function bindEvents() {
     state.teamsText = teamsDataToText(roster);
     state.groups = [];
     state.playoffs = null;
-    state.message = "Equipos guardados. Entre a Grupos y pulse Generar grupos.";
+    state.message = "Equipos guardados.";
     saveState();
     render();
   });
@@ -112,7 +112,7 @@ function bindEvents() {
       return;
     }
     if (roster.some((entry) => !entry.name || !entry.sex)) {
-      state.message = "Complete el sexo de todos los participantes antes de generar grupos.";
+      state.message = "Complete el sexo de todos los participantes.";
       saveState();
       render();
       return;
@@ -545,7 +545,7 @@ async function saveRemoteStateNow() {
 function renderGroups(groups) {
   if (!els.groupsContainer) return;
   if (!groups.length) {
-    els.groupsContainer.innerHTML = `<div class="empty">Todavia no se generaron grupos. Abra esta pagina y pulse "Generar grupos".</div>`;
+    els.groupsContainer.innerHTML = `<div class="empty">Todavia no hay grupos cargados.</div>`;
     return;
   }
 
