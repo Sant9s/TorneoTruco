@@ -709,7 +709,11 @@ function getFixtureRounds(group) {
       playing.add(match.home);
       playing.add(match.away);
     });
-    round.bye = group.teams.find((team) => !playing.has(team)) || null;
+    const byeTeam = (group.teams || []).find((team) => {
+      const teamName = typeof team === "string" ? team : String(team?.name || "").trim();
+      return teamName && !playing.has(teamName);
+    });
+    round.bye = typeof byeTeam === "string" ? byeTeam : byeTeam?.name || null;
   });
 
   return rounds;
