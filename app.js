@@ -252,12 +252,12 @@ function render(reconcile = true) {
       : "Todavia no hay equipos cargados.";
   }
   if (els.groupsSummary) {
-    if (!teams.length) {
+    if (!roster.length) {
       els.groupsSummary.textContent = "Todavia no hay equipos cargados.";
     } else if (!loadedGroups.length) {
       els.groupsSummary.textContent = "Hay equipos cargados, pero todavia no se generaron grupos.";
     } else {
-      els.groupsSummary.textContent = `Total de equipos: ${teams.length}. Resultados cargados: ${groupStats.played} de 160.`;
+      els.groupsSummary.textContent = `Total de equipos: ${roster.length}. Resultados cargados: ${groupStats.played} de 160.`;
     }
   }
   if (els.pageSubtitle) {
