@@ -662,6 +662,26 @@ textarea::placeholder {
     flex-direction: column;
   }
 
+  .team-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .team-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .match-actions {
+    width: 100%;
+  }
+
+  .match-actions button {
+    width: auto;
+  }
+
   .fixture-matches {
     grid-template-columns: 1fr;
   }
@@ -701,6 +721,10 @@ textarea::placeholder {
 
   .bye-badge {
     max-width: 100%;
+  }
+
+  .match-teams {
+    width: 100%;
   }
 
   button,
